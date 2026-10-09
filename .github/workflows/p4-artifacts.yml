@@ -1,0 +1,42 @@
+name: Practical 4 - Preserve ML Artifacts
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/p4-artifacts.yml'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  train-gate-test-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+      - name: Install ML dependencies
+        run: pip install -r requirements.txt
+      - name: Train hotel cancellation model
+        run: python practical2/train_model.py
+      - name: Check ML quality gate
+        run: python practical3/quality_gate.py
+      - name: Run automated ML tests
+        run: python -m unittest discover -s practical2 -v
+      - name: Upload validated ML artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: hotel-cancellation-ml-artifacts
+          path: |
+            hotel_cancellation_model.pkl
+            metrics.json
+          if-no-files-found: error
+          retention-days: 7
