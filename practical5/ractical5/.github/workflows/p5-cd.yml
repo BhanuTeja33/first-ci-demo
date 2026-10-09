@@ -1,0 +1,56 @@
+name: Practical 5 - Hotel ML CI-CD
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'practical5/**'
+      - '.github/workflows/p5-cd.yml'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  train-test-deliver:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Train hotel cancellation model
+        run: python practical2/train_model.py
+      - name: Check ML quality gate
+        run: python practical3/quality_gate.py
+      - name: Run automated ML tests
+        run: python -m unittest discover -s practical2 -v
+      - name: Run prediction application tests
+        run: python -m unittest discover -s practical5 -v
+      - name: Prepare release candidate
+        run: |
+          mkdir -p release_candidate
+          cp practical5/app.py release_candidate/
+          cp hotel_cancellation_model.pkl release_candidate/
+          cp metrics.json release_candidate/
+          cp requirements.txt release_candidate/
+          {
+            echo "Hotel Cancellation Prediction ML Application"
+            echo "Install: pip install -r requirements.txt"
+            echo "Run: python app.py"
+            echo "Endpoint: POST /predict"
+          } > release_candidate/DEPLOYMENT.txt
+      - name: Upload release candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: hotel-cancellation-ml-release
+          path: release_candidate/
+          if-no-files-found: error
+          retention-days: 7
