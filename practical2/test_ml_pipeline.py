@@ -57,7 +57,8 @@ class TestMLPipeline(unittest.TestCase):
             total_of_special_requests=0,
             market_segment="Groups",
         )
-        self.assertEqual(int(model.predict(sample)[0]), 1)
+        # TEMPORARY FAILURE: original expected value was 1
+        self.assertEqual(int(model.predict(sample)[0]), 0)
 
     def test_low_risk_booking(self):
         # Short lead time, special requests, parking, booking changes made
